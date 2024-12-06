@@ -1,2 +1,3 @@
 .idea
-pkg/mod/cache
+product-api/pkg
+pkg
