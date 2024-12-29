@@ -1,4 +1,4 @@
-module currency
+module github.com/Loveisabeautifulpain/go-microservice/currency
 
 go 1.22
 

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"currency/data"
-	protos "currency/protos/currency/protos"
-	"currency/server"
 	"fmt"
+	"github.com/Loveisabeautifulpain/go-microservice/currency/data"
+	protos "github.com/Loveisabeautifulpain/go-microservice/currency/protos/currency/protos"
+	"github.com/Loveisabeautifulpain/go-microservice/currency/server"
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
