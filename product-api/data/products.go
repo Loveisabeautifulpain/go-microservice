@@ -19,13 +19,13 @@ type Product struct {
 	// min: 1
 	ID int `json:"id"` // Unique identifier for the product
 
-	// the name for this product
+	// the name for this poduct
 	//
 	// required: true
 	// max length: 255
 	Name string `json:"name" validate:"required"`
 
-	// the description for this product
+	// the description for this poduct
 	//
 	// required: false
 	// max length: 10000
@@ -50,10 +50,37 @@ type Products []*Product
 type ProductsDB struct {
 	currency protos.CurrencyClient
 	log      hclog.Logger
+	rates    map[string]float64
+	client   protos.Currency_SubscribeRatesClient
 }
 
 func NewProductsDB(c protos.CurrencyClient, l hclog.Logger) *ProductsDB {
-	return &ProductsDB{c, l}
+	pb := &ProductsDB{c, l, make(map[string]float64), nil}
+
+	go pb.handleUpdates()
+
+	return pb
+}
+
+func (p *ProductsDB) handleUpdates() {
+	sub, err := p.currency.SubscribeRates(context.Background())
+	if err != nil {
+		p.log.Error("Unable to subscribe for rates", "error", err)
+	}
+
+	p.client = sub
+
+	for {
+		rr, err := sub.Recv()
+		p.log.Info("Recieved updated rate from server", "dest", rr.GetDestination().String())
+
+		if err != nil {
+			p.log.Error("Error receiving message", "error", err)
+			return
+		}
+
+		p.rates[rr.Destination.String()] = rr.Rate
+	}
 }
 
 // GetProducts returns all products from the database
@@ -152,12 +179,23 @@ func findIndexByProductID(id int) int {
 }
 
 func (p *ProductsDB) getRate(destination string) (float64, error) {
+	// if cached return
+	if r, ok := p.rates[destination]; ok {
+		return r, nil
+	}
+
 	rr := &protos.RateRequest{
 		Base:        protos.Currencies(protos.Currencies_value["EUR"]),
 		Destination: protos.Currencies(protos.Currencies_value[destination]),
 	}
 
+	// get initial rate
 	resp, err := p.currency.GetRate(context.Background(), rr)
+	p.rates[destination] = resp.Rate // update cache
+
+	// subscribe for updates
+	p.client.Send(rr)
+
 	return resp.Rate, err
 }
 

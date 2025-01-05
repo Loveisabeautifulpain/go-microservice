@@ -56,7 +56,7 @@ func (e *ExchangeRates) MonitorRates(interval time.Duration) chan struct{} {
 				for k, v := range e.rates {
 					// change can be 10% of original value
 					change := (rand.Float64() / 10)
-					// is this a postive or negative change
+					// is this a positive or negative change
 					direction := rand.Intn(1)
 
 					if direction == 0 {
